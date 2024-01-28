@@ -21,35 +21,29 @@ Problem 2:
   gspace = read_csv('greenspace_data_share.csv') #include quotations
 
 # summarize average urban greenspace by region
-  table <- gspace |> #made table an object with <- and put on same line
-    group_by(Major_Geo_Region) |> #add piping in
-    summarise(
+  table = 
+    gspace |>
+    group_by(Major_Geo_Region) |> #add pipe
+    summarize(
       obs = n(), #added comma
       avg = mean(annual_avg_2020), #added _
       weighted_avg = mean(annual_weight_avg_2020) #added _
     ) 
 
 # output as table
-  kable(table) #changed to name of object
+  kable(table, digits = 1L) #added L and changed gspace to table
 ```
 
 Problem 3: The green space data covers `r length(gspace$City)` urban areas.
 
+
 Problem 4: In a couple of sentences and with reference to a well-formatted tabulation, describe the green space classification scores for urban areas in 2021.
+The majority of cities in 2021 scored in one of the low categories (`Exceptionally Low`, `Very Low`, and `Low`). Only one city scored either `Very High` or `Exceptionally High`. 
 
 ```{r}
-gsscore <- gspace |>
-  count(
-      Exceptionally_High = peak_NDVI_2021 >= 0.7,
-      Very_High = 0.6 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.7,
-      High = 0.5 <= peak_NDVI_2021 & peak_NDVI_2021,
-      Moderate = 0.4 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.5,
-      Low = 0.3 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.4,
-      Very_Low = 0.2 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.3,
-      Exceptionally_Low = peak_NDVI_2021 < 0.2
-  )
-col.names = c('Exceptionally_High', 'Very_High', 'High', 'Moderate', 'Low', 'Very_Low', 'Exceptionally_Low')
-table(col.names, gsscore$n) ##outputs weird but its CLOSE
+gsscore <- gspace |> 
+  count('Indicator 2021' = indicator_2021)
+kable(gsscore) 
 ```
 
 Problem 5a: a. In 2015 `r sum(gspace$peak_NDVI_2015 >= 0.5)` cities scored `High` or above.  
@@ -58,20 +52,86 @@ Problem 5a: a. In 2015 `r sum(gspace$peak_NDVI_2015 >= 0.5)` cities scored `High
 print(sum(gspace$peak_NDVI_2015 >= 0.5))
 ```
 
-Problem 5b: Scored `Exceptionally Low` at any point in the years covered.  
-```{r}
+Problem 5b: Scored `Exceptionally Low` at any point in the years covered. 
 
+```{r}
+except_low <- gspace |>
+  summarize(
+    `2010` = sum(indicator_2010 == 'Exceptionally Low', na.rm = TRUE),
+    `2015` = sum(indicator_2015 == 'Exceptionally Low', na.rm = TRUE),
+    `2020` = sum(indicator_2020 == 'Exceptionally Low', na.rm = TRUE),
+    `2021` = sum(indicator_2021 == 'Exceptionally Low', na.rm = TRUE)
+  )
+kable(except_low)
 ```
 
 Problem 5c: Urban areas in arid climate that became greener (as measured by annual weighted average) from 2010 to 2020.  
-```{r}
 
+```{r}
+result = gspace |>
+  filter(Climate_region == 'Arid') |>
+  mutate(
+    greener = ifelse(annual_weight_avg_2020 > annual_weight_avg_2010, 'Greener', 'Not Greener')
+  )
+count(result, greener) 
 ```
 
 Problem 6: How many urban areas became less green (measured by annual average) from 2010 to 2021? Were these changes concentrated in a particular geographic or climate region? Explain (with evidence, of course).
 
+```{r}
+result = gspace |>
+  group_by(Climate_region) |>
+  mutate(
+    greener = ifelse(annual_avg_2021 > annual_avg_2010, 'Greener', 'Not Greener'),
+  ) |>
+  summarize(greener == 'Not Greener') 
+table(result)
+```
+
 Problem 7: Present a histogram showing the change in greenspace (annual average) from 2010 to 2021. Note that you will need to create a new variable equal to this difference.  
+
+```{r}
+gspace |>
+  mutate(gs_difference = annual_avg_2021 - annual_avg_2010) |>
+    ggplot(aes(x = gs_difference)) +
+  geom_histogram(color = "red", fill = "cornflowerblue") + labs(
+    title = "Difference in Greenspace, 2010-2021",
+    x = "Difference in Annual Average Greenspace",
+    y = "Frequency"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(color = "blue", size = 16, face = "bold")
+  )
+```
 
 Problem 8: Present a scatter plot of population weighted greenspace in 2021 over the greenspace in 2010. 
 
+```{r}
+gspace |> 
+    ggplot(aes(x = annual_weight_avg_2021, y = annual_weight_avg_2010)) + 
+    geom_point(color = "red", size=1) + 
+    labs(title = "Population Weighted NDVI, 2010-2021",
+    x = "Population Weighted NDVI, 2021",
+    y = "Population Weighted NDVI, 2010") +
+    theme_classic() +
+    theme(plot.title = element_text(color = "blue", size = 16, face = "bold")
+  ) #not sure that data on the axes are correct
+```
+
 **BONUS OPPORTUNITY**: Use color-coding to differentiate urban areas that added versus lost greenspace in that time. Then include a 45-degree line to further highlight the change.
+
+Extra Credit:
+```{r}
+gspace |> 
+    ggplot(aes(x = annual_weight_avg_2021, y = annual_weight_avg_2010)) + 
+    geom_point(color = "red", size=1) + 
+    geom_abline(intercept = 0, slope = 1, size = 1, color = 'orange') +
+    labs(title = "Population Weighted NDVI, 2010-2021",
+    x = "Population Weighted NDVI, 2021",
+    y = "Population Weighted NDVI, 2010") +
+    theme_classic() +
+    theme(plot.title = element_text(color = "blue", size = 16, face = "bold")
+  )
+
+```
