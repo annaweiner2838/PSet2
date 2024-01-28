@@ -6,25 +6,72 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align='center', message=FALSE, warning=FALSE)
+library(tidyverse)
+library(knitr)
 ```
 
-## R Markdown
+Problem 1: https://github.com/annaweiner2838/PSet2.git
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Problem 2: 
+```{r}
+  library(tidyverse)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# open my data
+  gspace = read_csv('greenspace_data_share.csv') #include quotations
 
-```{r cars}
-summary(cars)
+# summarize average urban greenspace by region
+  table <- gspace |> #made table an object with <- and put on same line
+    group_by(Major_Geo_Region) |> #add piping in
+    summarise(
+      obs = n(), #added comma
+      avg = mean(annual_avg_2020), #added _
+      weighted_avg = mean(annual_weight_avg_2020) #added _
+    ) 
+
+# output as table
+  kable(table) #changed to name of object
 ```
 
-## Including Plots
+Problem 3: The green space data covers `r length(gspace$City)` urban areas.
 
-You can also embed plots, for example:
+Problem 4: In a couple of sentences and with reference to a well-formatted tabulation, describe the green space classification scores for urban areas in 2021.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+gsscore <- gspace |>
+  count(
+      Exceptionally_High = peak_NDVI_2021 >= 0.7,
+      Very_High = 0.6 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.7,
+      High = 0.5 <= peak_NDVI_2021 & peak_NDVI_2021,
+      Moderate = 0.4 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.5,
+      Low = 0.3 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.4,
+      Very_Low = 0.2 <= peak_NDVI_2021 & peak_NDVI_2021 < 0.3,
+      Exceptionally_Low = peak_NDVI_2021 < 0.2
+  )
+col.names = c('Exceptionally_High', 'Very_High', 'High', 'Moderate', 'Low', 'Very_Low', 'Exceptionally_Low')
+table(col.names, gsscore$n) ##outputs weird but its CLOSE
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Problem 5a: a. In 2015 `r sum(gspace$peak_NDVI_2015 >= 0.5)` cities scored `High` or above.  
+  
+```{r}
+print(sum(gspace$peak_NDVI_2015 >= 0.5))
+```
+
+Problem 5b: Scored `Exceptionally Low` at any point in the years covered.  
+```{r}
+
+```
+
+Problem 5c: Urban areas in arid climate that became greener (as measured by annual weighted average) from 2010 to 2020.  
+```{r}
+
+```
+
+Problem 6: How many urban areas became less green (measured by annual average) from 2010 to 2021? Were these changes concentrated in a particular geographic or climate region? Explain (with evidence, of course).
+
+Problem 7: Present a histogram showing the change in greenspace (annual average) from 2010 to 2021. Note that you will need to create a new variable equal to this difference.  
+
+Problem 8: Present a scatter plot of population weighted greenspace in 2021 over the greenspace in 2010. 
+
+**BONUS OPPORTUNITY**: Use color-coding to differentiate urban areas that added versus lost greenspace in that time. Then include a 45-degree line to further highlight the change.
